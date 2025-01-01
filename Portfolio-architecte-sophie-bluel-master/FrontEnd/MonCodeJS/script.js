@@ -1,49 +1,58 @@
-async function recuperationTravaux() { //opé asynchrones (tps), await gère promesses + facilement
-    try { //tester code
-        const reponseT = await fetch("http://localhost:5678/api/works");//requête API, attend promesse pr continuer
-        if (!reponseT.ok) {//si réponse API réussie
-            throw new Erreur("Erreur lors de la récupération des données");//sinon erreur ac message
+async function recuperationTravaux(filtre) { //opé asynchrones (tps), await gère promesses + facilement; filtre = catégorie spé
+    document.querySelector(".gallery").innerHTML = "";//vide gallery avant chargement nveaux travaux
+    try { //tester code = requête API
+        const reponseT = await fetch("http://localhost:5678/api/works");//requête API recup travaux, attend promesse pr continuer
+        if (!reponseT.ok) {//si réponse API différent de "ok"
+            throw new Erreur("Erreur lors de la récupération des données");//erreur levée
         }
         const travaux = await reponseT.json(); // Convertion réponse en JSON, accès + facilement données
-        console.log(travaux);
-        for (let i = 0; i < travaux.length; i++) {
-            obtenirProjet(travaux[i]);
+        if (filtre) {//si filtre fourni = a 1 valeur
+            const estFiltre = travaux.filter((info) => info.categoryId === filtre); //travaux filtrés par catégorie via filter() 
+            for (let i = 0; i < estFiltre.length; i++) {//pr chaque travail (filtré)
+                obtenirProjet(estFiltre[i]);//appel fonction pr ajouter ce projet ds gallery
+            }
+        } else {//si filtre n'a pas de valeur = tous les projets
+            for (let i = 0; i < travaux.length; i++) {//pr chaque travail (non filtré)
+                obtenirProjet(travaux[i]);//tous les projets ajoutés ds gallery sans filtre
+            }   
         }
-    } catch (erreur) { //si erreur, gère
-        console.error("Il y a eu un problème :", erreur); // Gère les erreurs
+    } catch (erreur) { //si erreur
+        console.error("Il y a eu un problème :", erreur); // affiche erreur ds console
     }
 }
-// Appel de la fonction
-recuperationTravaux(); //exécution de la fonction
+recuperationTravaux();// appel pr récup & afficher tous les projets au chargement page
 
-function obtenirProjet(info) {
-    const projet = document.createElement("figure");
+function obtenirProjet(info) {//info : paramètre qui contient infos sur projets
+    const projet = document.createElement("figure");//creation element figure  & titre
     projet.innerHTML = `<img src=${info.imageUrl} alt=${info.title}>
-				<figcaption>${info.title}</figcaption>`;
-    document.querySelector(".gallery").appendChild(projet);
+				<figcaption>${info.title}</figcaption>`;//img & alt + titre
+
+    document.querySelector(".gallery").appendChild(projet); //ajout figure à la fin de l'element gallery
 }
 
 async function obtenirCategories() {
     try {
-        const reponseC = await fetch("http://localhost:5678/api/categories");
-        if (!reponseC.ok) {
-            throw new Erreur("Erreur lors de la récupération des données");
+        const reponseC = await fetch("http://localhost:5678/api/categories");//requête API recup catégories, attend promesse pr continuer
+        if (!reponseC.ok) {//si réponse API différent de "ok"
+            throw new Erreur("Erreur lors de la récupération des données");//erreur levée
         }
 
-        const categories = await reponseC.json();
-        console.log(categories);
-        for (let i = 0; i < categories.length; i++) {
-            afficherFiltres(categories[i]);
+        const categories = await reponseC.json();// Convertion réponse en JSON, accès + facilement données
+        for (let i = 0; i < categories.length; i++) {//pr chaque catégorie
+            afficherFiltres(categories[i]);//appel de cette fction 
         }
-    } catch (erreur) {
-        console.error("Il y a eu un problème :", erreur);
+    } catch (erreur) {//si erreur
+        console.error("Il y a eu un problème :", erreur);// affiche erreur ds console
     }
 }
-obtenirCategories();
-
+obtenirCategories();//appel pr recup catégories dispo via API
 
 function afficherFiltres(info) {
-    const divConteneur = document.createElement("div");
-    divConteneur.innerHTML = `${info.name}`;
-    document.querySelector(".div-conteneur").appendChild(divConteneur);
+    console.log(info);
+    const divConteneur = document.createElement("div");//creation elements div pr chaque catégorie
+    divConteneur.className = info.name;//attribution nom de classe aux div créés
+    divConteneur.addEventListener("click", () => recuperationTravaux(info.id));//gestion d'événement qui appelle recuperationTravaux ac pr paramètre  celui qui contient les infos sur projets 
+    divConteneur.innerHTML = `${info.name}`;//texte afficher entre les balises ouvrantes & fermantes des div créés
+    document.querySelector(".div-conteneur").appendChild(divConteneur);//lie le parent dt classe est div-conteneur aux div créés
 }
+document.querySelector(".tous").addEventListener("click", () => recuperationTravaux());//ajout événement aux btns ac classe tous pr appeler fction recuperationTravaux() sans filtrer, afficher ts les projets
